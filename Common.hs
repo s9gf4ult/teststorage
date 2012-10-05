@@ -3,6 +3,7 @@
 module Common where
 
 import Data.Int
+import Data.List (foldl')
 import Data.Text (Text, pack)
 import System.Random
 import Control.DeepSeq
@@ -49,14 +50,46 @@ measureTime s m = do
   liftIO $ putStrLn $ (s res) ++ " took " ++ (show $ diffUTCTime t2 t1) ++ " seconds"
   return res
 
-littleTest :: (Storage a, Monad m, MonadIO m) => Int -> a -> ErrorT String m ()
-littleTest inscount a = do
+beforeTest :: (Storage a, Monad m, MonadIO m) => Int -> a -> ErrorT String m ()
+beforeTest inscount a = do
   resetS a
   measureTime (\_ -> "Inserting " ++ (show inscount) ++ " elements") $ do
     x <- liftIO genStorables
     saveS a $ take inscount x
-  measureTime (\x -> "Fetching " ++ (show $ length x) ++ " elemtns") $ getS a
   return ()
+
+littleTest :: (Storage a, Monad m, MonadIO m) => Int -> a -> ErrorT String m ()
+littleTest inscount a = do
+  beforeTest inscount a
+  measureTime (\x -> "Fetching " ++ (show inscount) ++ " elemtns") $ getS a
+  return ()
+
+copyTest :: (Storage a, Monad m, MonadIO m) => Int -> a -> ErrorT String m ()
+copyTest i a = do
+  beforeTest i a
+  measureTime (\x -> "Copying " ++ (show i) ++ " elements") $ do
+    g <- getS a
+    saveS a g
+  return ()
+
+aggTest :: (Storage a, Monad m, MonadIO m) => Int -> a -> ErrorT String m ()
+aggTest i a = do
+  beforeTest i a
+  measureTime (\_ -> "Aggregating " ++ (show i) ++ " elements") $ do
+    g <- getS a
+    saveS a [aggMax g]
+
+splitList :: Int -> [a] -> [[a]]
+splitList i x = a : (stop b $ splitList i b)
+  where
+    (a, b) = splitAt i x
+    stop [] _ = []
+    stop _ x = x
+
+aggMax :: [Storable] -> Storable
+aggMax x = foldl' fl (Storable 0 0 0 "") x
+  where
+    fl (Storable a b c d) (Storable aa bb cc dd) = Storable (max a aa) (max b bb) (max c cc) (max d dd)
   
 mapLeftE :: (Monad m) => (a -> b) -> ErrorT a m c -> ErrorT b m c
 mapLeftE f m = ErrorT $ runErrorT m >>= return . mapl

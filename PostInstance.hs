@@ -29,16 +29,9 @@ instance FromRow Storable where
 execLeft :: (Monad m, MonadIO m) => IO a -> ErrorT String m a 
 execLeft = (mapLeftE (show :: SomeException -> String)) . ErrorT . liftIO . try
 
-splitList :: Int -> [a] -> [[a]]
-splitList i x = a : (stop b $ splitList i b)
-  where
-    (a, b) = splitAt i x
-    stop [] _ = []
-    stop _ x = x
-
 instance Storage Connection where
   saveS c s = do
-    execLeft $ executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)" s
+    execLeft $ mapM_ (executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)") $ splitList 1000 s
     return ()
   getS c = do
     ret <- execLeft $ query_ c "select a, b, c, d from storables"

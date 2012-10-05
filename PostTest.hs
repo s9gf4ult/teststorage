@@ -15,11 +15,16 @@ main = do
     case a of
       [ra] -> do
         aa <- maybeToErrorT "pleas insert the number of things to thest with" $ readMay ra
-        littleTest aa c
+        work aa c
   
-      _ -> littleTest 10000 c
+      _ -> work 10000 c
   
   case ret of
     Left e -> putStrLn e
     Right _ -> return ()
+  where
+    work i a = do
+      littleTest i a
+      copyTest i a
+      aggTest i a
   

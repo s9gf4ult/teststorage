@@ -27,7 +27,7 @@ instance FromRow Storable where
     return $ Storable a b c d
 
 execLeft :: (Monad m, MonadIO m) => IO a -> ErrorT String m a 
-execLeft = (mapLeftE (show :: SomeException -> String)) . ErrorT . liftIO . try
+execLeft m = (mapLeftE (show :: SomeException -> String)) $ ErrorT $ liftIO $ try $ (m >>= evaluate)
 
 instance Storage Connection where
   saveS c s = do

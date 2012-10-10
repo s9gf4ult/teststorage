@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module GenerateTest where
 
 import Common
@@ -5,6 +7,7 @@ import Safe
 import System.Environment
 import Control.Monad.Trans.Error
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Control
 
   
 main = do
@@ -19,7 +22,7 @@ main = do
     Left e -> putStrLn e
     Right _ -> return ()
 
-work :: Int -> (Monad m, MonadIO m) => ErrorT String m [Storable]
+work :: Int -> (Monad m, MonadIO m, MonadBaseControl IO m) => ErrorT String m [Storable]
 work c = measureTime wp $ liftIO $ do
   s <- genStorables
   return $ take c s

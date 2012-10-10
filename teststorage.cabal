@@ -24,6 +24,7 @@ executable PostTest
                        mtl,
                        time,
                        postgresql-simple,
+                       monad-control,
                        safe,
                        text
   ghc-options:         -main-is PostTest -rtsopts
@@ -38,7 +39,22 @@ executable GenerateTest
                        mtl,
                        time,
                        safe,
+                       monad-control,
                        text
 
   ghc-options:         -main-is GenerateTest -rtsopts
-                   
+
+executable MongoTest
+  main-is:             MongoTest.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       random,
+                       deepseq,
+                       transformers,
+                       mtl,
+                       time,
+                       mongoDB,
+                       safe,
+                       monad-control,
+                       text
+  ghc-options:         -main-is MongoTest -rtsopts

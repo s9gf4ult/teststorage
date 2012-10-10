@@ -12,6 +12,8 @@ import Control.Monad.Trans
 import Control.Monad.IO.Class
 import Data.Time.Clock
 import Control.Monad.Trans.Control
+import System.Environment
+import Safe
 
 data Storable = Storable Int32 Int32 Int64 Text
               deriving (Eq, Show)
@@ -79,6 +81,34 @@ aggTest i a = do
   measureTime (\_ -> "Aggregating " ++ (show i) ++ " elements") $ do
     g <- getS a
     saveS a [aggMax g]
+
+testsFromName "little" = [littleTest]
+testsFromName "copy" = [copyTest]
+testsFromName "agg" = [aggTest]
+testsFromName _ = []
+
+execTests i o [] = execTests i o ["all"]
+execTests i o a = mapM_ et a
+  where
+    et "all" = execTests i o ["little", "copy", "agg"]
+    et x = do
+      liftIO $ putStrLn $ "exec test: " ++ x
+      case testsFromName x of
+        [] -> liftIO $ putStrLn $ "dont know what is \"" ++ x ++ "\""
+        a -> mapM_ (\f -> f i o) a
+
+argsExec [] o = argsExec ["10000"] o
+argsExec args o = do
+  let (f, l) = firstLast args
+  case readMay l of
+    Nothing -> liftIO $ putStrLn "last argument must be number of objects to test with"
+    Just i -> execTests i o f
+  where
+    firstLast x = let rx = reverse x
+                  in (reverse $ tail rx, head rx)
+  
+  
+
 
 splitList :: Int -> [a] -> [[a]]
 splitList i x = a : (stop b $ splitList i b)

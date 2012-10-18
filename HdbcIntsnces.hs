@@ -41,6 +41,7 @@ liftErr m = mapLeftE (show :: SomeException -> String) $ ErrorT $ liftIO $ try $
 instance Storage HDBCPack where
   saveS hp st = liftErr $ executeMany (hInsert hp) $ map toSqlVal st
   getS hp = do
+    liftErr $ execute (hGet hp) []
     vls <- liftErr $ fetchAllRows $ hGet hp
     mapM fromSqlVal vls
   
@@ -55,6 +56,8 @@ instance Storage HDBCPack where
                                                          convert g]
 
 getFilterSTMT st vals = liftErr $ do
-  vls <- liftErr $ fetchAllRows
+  liftErr $ execute st vals
+  vls <- liftErr $ fetchAllRows st
+  mapM fromSqlVal vls
 
 

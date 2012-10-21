@@ -55,7 +55,7 @@ instance Storage HDBCPack where
   getFilterA (CLGT l g) hp = getFilterSTMT (hGetLGT hp) [convert l,
                                                          convert g]
 
-getFilterSTMT st vals = liftErr $ do
+getFilterSTMT st vals = do
   liftErr $ execute st vals
   vls <- liftErr $ fetchAllRows st
   mapM fromSqlVal vls

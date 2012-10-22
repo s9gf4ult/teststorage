@@ -39,7 +39,9 @@ liftErr m = mapLeftE (show :: SomeException -> String) $ ErrorT $ liftIO $ try $
   
 
 instance Storage HDBCPack where
-  saveS hp st = liftErr $ executeMany (hInsert hp) $ map toSqlVal st
+  saveS hp st = liftIO $ withWConn (hConn hp) $ \con -> withTransaction con $ \_ -> do
+    executeMany (hInsert hp) $ map toSqlVal st
+  
   getS hp = do
     liftErr $ execute (hGet hp) []
     vls <- liftErr $ fetchAllRows $ hGet hp

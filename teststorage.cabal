@@ -58,3 +58,20 @@ executable MongoTest
                        monad-control,
                        text
   ghc-options:         -main-is MongoTest -rtsopts
+
+executable HdbcTest
+  main-is:             HdbcTest.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       random,
+                       deepseq,
+                       transformers,
+                       mtl,
+                       time,
+                       monad-control,
+                       safe,
+                       text,
+                       HDBC-postgresql,
+                       HDBC,
+                       convertible
+  ghc-options:         -main-is HdbcTest -rtsopts

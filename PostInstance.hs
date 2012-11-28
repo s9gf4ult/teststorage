@@ -33,12 +33,15 @@ instance Storage Connection where
   saveS c s = do
     execLeft $ mapM_ (executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)") $ splitList 1000 s
     return ()
-  getS c = do
-    ret <- execLeft $ query_ c "select a, b, c, d from storables"
-    return ret
-  resetS c = do
-    execLeft $ execute_ c "drop table if exists storables"
-    execLeft $ execute_ c "create table storables (a integer, b integer, c bigint, d char(100))"
+  getS c = execLeft $ query_ c "select a, b, c, d from storables"
+  resetS c = execLeft $ do
+    mapM_ (execute_ c) ["drop table if exists storables",
+                        "create table storables (a integer, b integer, c bigint, d char(100))",
+                        "create index on storables (a)",
+                        "create index on storables (b)",
+                        "create index on storables (c)",
+                        "create index on storables (d)"]
+                        
     return ()
 
   getFilterA (CLT l) c = execLeft $ query c "select a, b, c, d from storables where a < ?" [l]

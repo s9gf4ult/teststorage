@@ -1,10 +1,12 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverloadedStrings, MultiParamTypeClasses, FlexibleContexts #-}
 module MongoInstances where
 
 import Database.MongoDB
 import Common
 import Control.Monad.Trans.Error
 import Data.Monoid
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Control
 
 toDocument :: Storable -> Document
 toDocument (Storable a b c d) = ["a" := Int32 a,
@@ -38,7 +40,7 @@ combineGetS cond a = do
     rest c
   mapM fromDocument docs
 
-instance Storage Pipe where
+instance (Monad m, MonadIO m, MonadBaseControl IO m) => Storage Pipe (ErrorT String m) where
   saveS a vals = mapLeftE show $ ErrorT $ access a master "test" $
                  mapM_ (insertMany_ "storables") $ splitList 400 $ map toDocument vals
   getS a = combineGetS [] a

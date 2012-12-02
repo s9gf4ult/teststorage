@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, MultiParamTypeClasses #-}
 
 module Common where
 
@@ -39,13 +39,13 @@ data Condition = CLT Int32
                | CGT Int32
                | CLGT Int32 Int32
   
-class Storage a where
-  saveS :: (MonadIO m, MonadBaseControl IO m, Monad m) => a -> [Storable] -> ErrorT String m ()
-  getS :: (Monad m, MonadBaseControl IO m, MonadIO m) => a -> ErrorT String m [Storable]
-  getFilterA :: (MonadIO m, MonadBaseControl IO m, Monad m) => Condition -> a -> ErrorT String m [Storable]
-  resetS :: (Monad m, MonadBaseControl IO m, MonadIO m) => a -> ErrorT String m ()
+class (Monad m) => Storage a m where
+  saveS :: a -> [Storable] -> m ()
+  getS :: a -> m [Storable]
+  getFilterA :: Condition -> a -> m [Storable]
+  resetS :: a -> m ()
 
-measureTime :: (Monad m, MonadBaseControl IO m, MonadIO m, NFData a) => (a -> String) -> ErrorT String m a -> ErrorT String m a
+-- measureTime :: (Monad m, MonadBaseControl IO m, MonadIO m, NFData a) => (a -> String) -> ErrorT String m a -> ErrorT String m a
 measureTime s m = do
   t1 <- liftIO getCurrentTime
   res <- t1 `deepseq` m
@@ -53,7 +53,7 @@ measureTime s m = do
   liftIO $ putStrLn $ (s res) ++ " took " ++ (show $ diffUTCTime t2 t1) ++ " seconds"
   return res
 
-beforeTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
+-- beforeTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
 beforeTest inscount a = do
   resetS a
   measureTime (\_ -> "Inserting " ++ (show inscount) ++ " elements") $ do
@@ -61,13 +61,13 @@ beforeTest inscount a = do
     saveS a $ take inscount x
   return ()
 
-littleTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
+-- littleTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
 littleTest inscount a = do
   beforeTest inscount a
   measureTime (\x -> "Fetching " ++ (show inscount) ++ " elemtns") $ getS a
   return ()
 
-copyTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
+-- copyTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
 copyTest i a = do
   beforeTest i a
   measureTime (\x -> "Copying " ++ (show i) ++ " elements") $ do
@@ -75,7 +75,7 @@ copyTest i a = do
     saveS a g
   return ()
 
-aggTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
+-- aggTest :: (Storage a, Monad m, MonadBaseControl IO m, MonadIO m) => Int -> a -> ErrorT String m ()
 aggTest i a = do
   beforeTest i a
   measureTime (\_ -> "Aggregating " ++ (show i) ++ " elements") $ do

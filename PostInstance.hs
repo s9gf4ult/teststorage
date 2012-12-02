@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances, MultiParamTypeClasses #-}
 module PostInstance where
 
 import Database.PostgreSQL.Simple
@@ -29,16 +29,16 @@ instance FromRow Storable where
 execLeft :: (Monad m, MonadIO m) => IO a -> ErrorT String m a 
 execLeft m = (mapLeftE (show :: SomeException -> String)) $ ErrorT $ liftIO $ try $ (m >>= evaluate)
 
-instance Storage Connection where
+instance (Monad m, MonadIO m) => Storage Connection (ErrorT String m) where
   saveS c s = do
     execLeft $ mapM_ (executeMany c "insert into storables(a, b, c, d) values (?,?,?,?)") $ splitList 1000 s
     return ()
   getS c = do
     ret <- execLeft $ query_ c "select a, b, c, d from storables"
     return ret
-  resetS c = do
-    execLeft $ execute_ c "drop table if exists storables"
-    execLeft $ execute_ c "create table storables (a integer, b integer, c bigint, d char(100))"
+  resetS c = execLeft $ do
+    execute_ c "drop table if exists storables"
+    execute_ c "create table storables (a integer, b integer, c bigint, d char(100))"
     return ()
 
   getFilterA (CLT l) c = execLeft $ query c "select a, b, c, d from storables where a < ?" [l]

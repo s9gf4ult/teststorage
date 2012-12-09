@@ -10,9 +10,6 @@ import Control.Monad.IO.Class
 
 main = do
   args <- getArgs
-  ret <- runErrorT $ do
-    c <- execLeft $ connect $ ConnectInfo "127.0.0.1" 5432 "test" "test" "test"
-    argsExec args c
-  case ret of
-    Left e -> putStrLn e
-    Right _ -> return ()
+  c <-  connect $ ConnectInfo "127.0.0.1" 5432 "test" "test" "test"
+  ret <- argsExec args c
+  return ()

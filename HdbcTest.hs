@@ -25,9 +25,6 @@ makePost = do
 
 main = do
   args <- getArgs
-  ret <- runErrorT $ do
-    c <- liftErr makePost
-    argsExec args c
-  case ret of
-    Left e -> putStrLn e
-    Right _ -> return ()
+  c <- makePost
+  argsExec args c
+  return ()

@@ -9,10 +9,6 @@ import Control.Monad.Trans.Error
 
 main = do
   arg <- getArgs
-  ret <- runErrorT $ do
-    p <- mapLeftE show $ connect $ host "127.0.0.1"
-    argsExec arg p
-  case ret of
-    Left e -> putStrLn e
-    Right a -> return ()
+  p <- runIOE $ connect $ host "127.0.0.1"
+  argsExec arg p
     

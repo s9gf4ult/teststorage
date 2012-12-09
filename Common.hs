@@ -6,6 +6,7 @@ import Data.Int
 import Data.List (foldl')
 import Data.Text (Text, pack)
 import System.Random
+import Control.Exception
 import Control.DeepSeq
 import Control.Monad.Trans.Error
 import Control.Monad.Trans
@@ -47,9 +48,9 @@ class (Monad m) => Storage a m where
 
 -- measureTime :: (Monad m, MonadBaseControl IO m, MonadIO m, NFData a) => (a -> String) -> ErrorT String m a -> ErrorT String m a
 measureTime s m = do
-  t1 <- liftIO getCurrentTime
-  res <- t1 `deepseq` m
-  t2 <- res `deepseq` liftIO getCurrentTime
+  t1 <- liftIO $ getCurrentTime
+  res <- m
+  t2 <- liftIO getCurrentTime
   liftIO $ putStrLn $ (s res) ++ " took " ++ (show $ diffUTCTime t2 t1) ++ " seconds"
   return res
 
@@ -57,7 +58,7 @@ measureTime s m = do
 beforeTest inscount a = do
   resetS a
   measureTime (\_ -> "Inserting " ++ (show inscount) ++ " elements") $ do
-    x <- liftIO genStorables
+    x <- liftIO $ genStorables
     saveS a $ take inscount x
   return ()
 
@@ -97,6 +98,7 @@ execTests i o a = mapM_ et a
         [] -> liftIO $ putStrLn $ "dont know what is \"" ++ x ++ "\""
         a -> mapM_ (\f -> f i o) a
 
+argsExec :: (Storage a m, MonadIO m) => [String] -> a -> m ()
 argsExec [] o = argsExec ["10000"] o
 argsExec args o = do
   let (f, l) = firstLast args

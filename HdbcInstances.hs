@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module HdbcInstances where
 
 
@@ -24,30 +26,25 @@ toSqlVal (Storable a b c d) = [convert a,
                                convert c,
                                convert d]
 
-fromSqlVal :: (Monad m, MonadIO m) => [SqlValue] -> ErrorT String m Storable
-fromSqlVal [a, b, c, d] = do
-  ac <- liftConv $ convert a
-  bc <- liftConv $ convert b
-  cc <- liftConv $ convert c
-  dc <- liftConv $ convert d
-  return $ Storable ac bc cc dc
-  where
-    liftConv = (mapLeftE (show :: SomeException -> String)) . ErrorT . liftIO . try . evaluate
-fromSqlVal _ = throwError "wrong size of return value"
+fromSqlVal :: [SqlValue] -> Storable
+fromSqlVal [a, b, c, d] = let ac = convert a
+                              bc = convert b
+                              cc = convert c
+                              dc = convert d
+                          in (Storable ac bc cc dc)
+fromSqlVal _ = error "wrong size of return value"
 
-liftErr m = mapLeftE (show :: SomeException -> String) $ ErrorT $ liftIO $ try $ (m >>= evaluate)
-  
 
-instance Storage HDBCPack where
-  saveS hp st = liftIO $ withWConn (hConn hp) $ \con -> withTransaction con $ \_ -> do
+instance Storage HDBCPack IO where
+  saveS hp st = withWConn (hConn hp) $ \con -> withTransaction con $ \_ -> do
     executeMany (hInsert hp) $ map toSqlVal st
   
   getS hp = do
-    liftErr $ execute (hGet hp) []
-    vls <- liftErr $ fetchAllRows $ hGet hp
-    mapM fromSqlVal vls
+    execute (hGet hp) []
+    vls <- fetchAllRows $ hGet hp
+    return $ map fromSqlVal vls
   
-  resetS hp = liftErr $ withWConn (hConn hp) $ \con -> do
+  resetS hp = withWConn (hConn hp) $ \con -> do
     run con "drop table if exists storables" []
     run con "create table storables (a integer, b integer, c bigint, d char(100))" []
     return ()
@@ -58,8 +55,8 @@ instance Storage HDBCPack where
                                                          convert g]
 
 getFilterSTMT st vals = do
-  liftErr $ execute st vals
-  vls <- liftErr $ fetchAllRows st
-  mapM fromSqlVal vls
+  execute st vals
+  vls <- fetchAllRows st
+  return $ map fromSqlVal vls
 
 
